@@ -1,0 +1,12 @@
+# Default
+node_modules
+
+
+# Custom
+/dist
+/config
+/public
+/scripts
+src/serviceWorker.ts
+src/utils
+src/XHR
