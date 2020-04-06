@@ -2,6 +2,21 @@
 import {convert} from 'css-color-function';
 import {getFile, replaceAll} from './core';
 
+declare global {
+  interface ProcessEnv {
+    env: {
+      readonly NODE_ENV: 'development' | 'production' | 'test';
+      readonly PUBLIC_URL: string;
+    }
+  }
+
+  const process: ProcessEnv;
+}
+
+interface StringMap {
+  [k: string]: string
+}
+
 interface DynamicThemeOptions {
   autoLoad?: boolean; // 是否根据meta加载主题色
   cssUrl: string; // 获取主题样式文件的url
