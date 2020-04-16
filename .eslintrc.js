@@ -28,7 +28,7 @@ module.exports = {
       'named': 'never',
       'asyncArrow': 'always',
     }],
-    'max-len': 1,
+    'max-len': [1, 150],
     'indent': 2,
     'no-unused-vars': 1,
     'no-console': 1,

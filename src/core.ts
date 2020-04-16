@@ -1,27 +1,12 @@
-// lodash
-// import {camelCase} from 'lodash';
-
-// css module shorter classname
-export function getClsName(prefix: string, styleModule: any): { [k: string]: CSSStyleDeclaration } {
-  return Object.keys(styleModule).reduce((p, c) => {
-    // const clsName = camelCase(c.replace(`${prefix}-`, ''));
-    const clsName = c.replace(`${prefix}-`, '');
-    return Object.assign(p, {[clsName]: styleModule[c]});
-  }, {});
-}
-
-export function genClsName(...classNames: (string | false)[]): string {
-  return classNames
-    .flat()
-    .map((c) => (c ? c.toLowerCase() : false))
-    .filter(Boolean)
-    .join(' ');
-}
-
-export function loadModules<T>(modules: any, target: T, ext = 'ts'): T {
+/*
+*  webpack require.context 自动引入
+*  1. target为对象时，返回target，文件名为key，default为value
+*  2. 为数组时，返回target为每个文件的default
+*/
+export function loadModules<T>(modules: any, target: T): T {
   const isArray = Array.isArray(target);
   return modules.keys().reduce((p: any, c: string) => {
-    const name = c.replace(new RegExp(`./|.${ext}`, 'g'), '');
+    const name = c.replace(/(?<path>\.\/)|(?<ext>\.\w+$)/g, '');
     return isArray
       ? [...p, modules(c).default]
       : {...p, [name]: modules(c).default};
@@ -45,6 +30,11 @@ export function getFile(url: string, isBlob?: boolean) {
   });
 }
 
+/*
+*  todo
+*  RegExp(str) 不能匹配带'.'的string
+*  e.g. background:rgba(12,12,12,.4)
+*/
 export function replaceAll(str: string, search: string, replacements: string): string {
   return str.includes(search) ? replaceAll(str.replace(search, replacements), search, replacements) : str;
 }
@@ -96,6 +86,10 @@ export function array2tree(arr: Array<any>, options: any) {
   return result;
 }
 
+/*
+*  延迟执行
+*  source： tj/co- thunkify
+*/
 export function thunk(fn: Function) {
   return function (...args: any) {
     return function () {
@@ -104,13 +98,16 @@ export function thunk(fn: Function) {
   };
 }
 
-export function promiseAll(arr: Promise<any>[]) {
+/*
+* 默认promise.all
+*/
+export function promiseAny(arr: Promise<any>[], length = arr.length) {
   return new Promise((resolve, reject) => {
     let res: any = [];
     arr.forEach(p => {
       Promise.resolve(p).then(r => {
         res.push(r);
-        if (res.length === arr.length) resolve(res);
+        if (res.length === length) resolve(res);
       }, reject);
     });
   });
