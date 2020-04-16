@@ -1,5 +1,5 @@
+import {Redirect, Route, Switch} from 'react-router-dom';
 import React from 'react';
-import {Route, Switch} from 'react-router-dom';
 
 interface RouteConfig {
   key?: React.Key;
@@ -9,27 +9,32 @@ interface RouteConfig {
   meta?: StringMap;
   strict?: boolean;
   exact?: boolean;
-  component: React.ComponentType<any>;
+  component?: React.ComponentType<any>;
   children?: RouteConfig[];
 }
 
 interface StringMap {
-  [k: string]: string
+  [key: string]: string;
 }
 
-function renderRoutes(routeConfigs: RouteConfig[]) {
-  let err404 = {} as RouteConfig;
-  const filterRoutes = routeConfigs.filter((route) => {
-    if (route.path === '*') {
-      err404 = route;
-      return false;
-    }
-    return true;
-  });
-  return (function render404Routes(routesWithout404: RouteConfig[], extraProps: any = {}, switchProps = {}) {
-    return routesWithout404 ? (
+export default function renderRoutes(routeConfigs: RouteConfig[]) {
+  if (!routeConfigs || !routeConfigs.length) return null;
+  const global404 = routeConfigs.find((route) => route.path === '*');
+  return (function __(routes, extraProps: any = {}, switchProps = {}) {
+    const sortedRoutes = routes.sort((next, cur) => {
+      let n = 1;
+      let c = 1;
+      if (next.path === '*') n = 100;
+      if (cur.path === '*') c = 100;
+      if (next.redirect) n = 10;
+      if (cur.redirect) c = 10;
+      return n - c;
+    });
+    return (
       <Switch {...switchProps}>
-        {routesWithout404.map((route, i) => {
+        {sortedRoutes.map((route, i) => {
+          if (route.path === '*') return <Route key={route.key || i} path="*" component={route.component}/>;
+          if (route.redirect) return <Redirect key={route.key || i} from={route.path} to={route.redirect as string}/>;
           const isAbsolutePath = route.path.startsWith('/');
           return (
             <Route
@@ -39,7 +44,7 @@ function renderRoutes(routeConfigs: RouteConfig[]) {
               strict={route.strict}
               render={(props) => {
                 const childRoutes = route.children
-                  ? render404Routes(
+                  ? __(
                     route.children,
                     {parentPath: route.path},
                     {location: props?.location},
@@ -57,10 +62,8 @@ function renderRoutes(routeConfigs: RouteConfig[]) {
             />
           );
         })}
-        {err404?.component && <Route path="*" component={err404.component}/>}
+        {global404?.component && <Route path="*" component={global404.component}/>}
       </Switch>
-    ) : null;
-  }(filterRoutes));
+    );
+  })(routeConfigs);
 }
-
-export default renderRoutes;
