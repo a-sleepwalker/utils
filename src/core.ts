@@ -3,9 +3,9 @@
 *  1. target为对象时，返回target，文件名为key，default为value
 *  2. 为数组时，返回target为每个文件的default
 */
-export function loadModules<T>(modules: any, target: T): T {
+export function loadModules<T extends Iterable<any>>(modules: any, target: T): T {
   const isArray = Array.isArray(target);
-  return modules.keys().reduce((p: any, c: string) => {
+  return modules.keys().reduce((p: T, c: string) => {
     const name = c.replace(/(?<path>\.\/)|(?<ext>\.\w+$)/g, '');
     return isArray
       ? [...p, modules(c).default]

@@ -62,6 +62,10 @@ class DynamicTheme {
     return this._colorDescMap;
   }
 
+  private set colorDescMap(value: StringMap) {
+    this._colorDescMap = value;
+  }
+
   private readonly _colorFormula: StringMap = {
     'light-1': 'color(primary a(10%))',
     'light-2': 'color(primary a(20%))',
@@ -103,11 +107,12 @@ class DynamicTheme {
   // 根据主题色，用css-color-function 生成颜色表
   private generateColors() {
     const color = this.cacheColor || this.primaryColor;
+    this.colorDescMap = {};
     this.colorDescMap[color] = 'primary';
     Object.keys(this.colorFormula).forEach((key) => {
       const value = this.colorFormula[key].replace(/primary/g, color);
-      // todo 忽略空格
       this.colorDescMap[convert(value).replace(/\s/g, '')] = key;
+      this.colorDescMap[convert(value)] = key;
     });
     !this.template && this.initTemplate();
     this.changeTheme();
@@ -116,7 +121,6 @@ class DynamicTheme {
   // 初始值变量替换
   private replaceTemplate(styleText: string) {
     let str = styleText;
-    // todo 忽略空格
     Object.keys(this.colorDescMap).forEach((key) => {
       const value = this.colorDescMap[key];
       str = replaceAll(str, key, value).replace(new RegExp(key, 'ig'), value);
@@ -127,8 +131,8 @@ class DynamicTheme {
   // 生成替换后的变量模版  开发和生产 获取原始样式方式不同
   private async initTemplate(): Promise<void> {
     if (process.env.NODE_ENV === 'development') {
-      const targetStyle = document.querySelector('.dynamic-theme');
-      const styles = targetStyle ? [targetStyle] : [...document.querySelectorAll('style')];
+      const targetStyle = document.querySelectorAll('.dynamic-theme');
+      const styles = targetStyle?.length ? [...targetStyle] : [...document.querySelectorAll('style')];
       this.template = styles.map((style) => this.replaceTemplate(style.innerHTML)).join('\n');
     } else {
       try {
@@ -147,17 +151,16 @@ class DynamicTheme {
       .keys(this.colorDescMap)
       .reduce((p, c) => ({...p, [this.colorDescMap[c]]: c}), {});
     if (colorMap?.primary === this.primaryColor) return;
-    const targetStyle = document.querySelector('.dynamic-theme');
     let newTemp = this.template;
     Object.keys(colorMap).forEach((key) => {
       newTemp = newTemp.replace(new RegExp(key, 'ig'), colorMap[key]);
     });
+    const targetStyle = document.querySelectorAll('.dynamic-theme');
+    targetStyle?.length && [...targetStyle].forEach(el => el.remove());
     const styleEl = document.createElement('style');
     styleEl.innerHTML = newTemp;
     styleEl.className = 'dynamic-theme';
-    targetStyle
-      ? document.head.replaceChild(styleEl, targetStyle)
-      : document.head.appendChild(styleEl);
+    document.head.appendChild(styleEl);
     this._primaryColor = this.cacheColor;
   }
 }
