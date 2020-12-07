@@ -3,11 +3,12 @@
 *  1. target为对象时，返回target，文件名为key，default为value
 *  2. 为数组时，返回target为每个文件的default
 */
-export function loadModules<T extends Iterable<any>>(modules: any, target: T): T {
-  const isArray = Array.isArray(target);
-  return modules.keys().reduce((p: T, c: string) => {
+export function loadModules<T>(modules: __WebpackModuleApi.RequireContext, target: { [key: string]: T }): { [key: string]: T }
+export function loadModules<T>(modules: __WebpackModuleApi.RequireContext, target: T[]): T []
+export function loadModules(modules: __WebpackModuleApi.RequireContext, target: [] | {}) {
+  return modules.keys().reduce((p, c) => {
     const name = c.replace(/(?<path>\.\/)|(?<ext>\.\w+$)/g, '');
-    return isArray
+    return Array.isArray(p)
       ? [...p, modules(c).default]
       : {...p, [name]: modules(c).default};
   }, target);
@@ -40,7 +41,7 @@ export function replaceAll(str: string, search: string, replacements: string): s
 }
 
 export function randomIntValue(max: number, min = 0): number {
-  return Math.floor(Math.random() * (max + 1 - min) + min);
+  return (Math.random() * (max + 1 - min) + min) << 0;
 }
 
 export function randomStr(len: number) {
@@ -105,10 +106,20 @@ export function promiseAny(arr: Promise<any>[], length = arr.length) {
   return new Promise((resolve, reject) => {
     let res: any = [];
     arr.forEach(p => {
-      Promise.resolve(p).then(r => {
+      p.then(r => {
         res.push(r);
         if (res.length === length) resolve(res);
       }, reject);
     });
   });
+}
+
+export function asyncForEach<T>(arr: T[], callback: (cur: T) => Promise<any>) {
+  const it = arr[Symbol.iterator]();
+  return (async function traverse(next = it.next()) {
+    if (!next.done) {
+      await callback(next.value);
+      await traverse();
+    }
+  })();
 }
